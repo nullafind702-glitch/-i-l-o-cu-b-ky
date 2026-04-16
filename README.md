@@ -1,45 +1,75 @@
-# 1. Tạo folder chứa runner
-sudo mkdir -p /opt/actions-runner
-cd /opt/actions-runner
+🚀 SERVERn nullaMC – Premium RDP via GitHub Actions
+📌 Giới thiệu
+SERVER vanmanhgaming là một GitHub Actions Workflow tự động tạo máy Windows có Remote Desktop (RDP) chạy trên GitHub Runner (windows-latest).
 
-# 2. Tải runner phiên bản 2.329.0
-sudo curl -O -L https://github.com/actions/runner/releases/download/v2.329.0/actions-runner-linux-x64-2.329.0.tar.gz
+Workflow này giúp bạn:
 
-# 3. Giải nén
-sudo tar xzf actions-runner-linux-x64-2.329.0.tar.gz
+Có ngay Windows RDP dùng tạm thời
+Không cần thuê VPS
+Không cần mở port public
+Kết nối an toàn qua Tailscale
+Tự động tắt & dọn dẹp khi hết thời gian
+Phù hợp cho:
 
-# 4. Tạo user runner
-sudo useradd -m runner
+Test phần mềm Windows
+Chạy tool / script
+Học tập – demo – dev nhanh
+Môi trường tạm thời, không lưu trữ lâu dài
+⚙️ Workflow này làm gì?
+Khi chạy, workflow sẽ tự động thực hiện tuần tự các bước sau:
 
-# 5. Chuyển quyền sở hữu
-sudo chown -R runner:runner /opt/actions-runner
+Khởi động Windows Runner
+Bật Remote Desktop (RDP)
+Mở firewall cổng 3389 (nội bộ)
+Tạo user Administrator
+Sinh hoặc dùng mật khẩu tùy chỉnh
+Cài đặt & kết nối Tailscale
+Lấy IP riêng (private IP)
+Kiểm tra kết nối RDP
+Hiển thị thông tin đăng nhập
+Duy trì phiên theo thời gian bạn chọn
+Hết thời gian → tự động dọn dẹp & khóa hệ thống
+🧱 Yêu cầu trước khi sử dụng
+1️⃣ GitHub Account
+GitHub Free / Pro đều dùng được
+Có quyền chạy GitHub Actions
+2️⃣ Tailscale Account
+Đăng ký tại https://tailscale.com
+Tạo Auth Key (Reusable hoặc Ephemeral đều được)
+🔐 Thiết lập Secrets (BẮT BUỘC)
+Vào repo GitHub → Settings → Secrets and variables → Actions → New repository secret
 
-# 6. Cấu hình runner với URL repo và token
-sudo -u runner /opt/actions-runner/config.sh --url https://github.com/vamnhcorder8/VPS --token B2KR5SVNDV67SF7WLVM46N3JE2OAY
+🔑 Secret bắt buộc
+Tên	Mô tả
+TAILSCALE_AUTH_KEY	Auth Key của Tailscale
+🔐 Secret tùy chọn
+Tên	Mô tả
+CUSTOM_RDP_PASS	Mật khẩu RDP do bạn tự đặt
+Nếu không đặt CUSTOM_RDP_PASS, workflow sẽ tự sinh mật khẩu an toàn.
 
-# 7. Tạo systemd service chạy 24/7
-sudo bash -c 'cat <<EOF >/etc/systemd/system/actions-runner.service
-[Unit]
-Description=GitHub Actions Runner
-After=network.target
-[Service]
-ExecStart=/opt/actions-runner/run.sh
-User=runner
-WorkingDirectory=/opt/actions-runner
-Restart=always
-[Install]
-WantedBy=multi-user.target
-EOF'
+▶️ Cách chạy Workflow
+Bước 1: Vào Actions
+Mở repo GitHub
+Chọn tab Actions
+Chọn workflow: 🚀 SERVER nullaMC
+Bước 2: Run workflow
+Nhấn Run workflow
+Chọn Thời gian sử dụng
+Nhấn Run
+⏱️ Các mốc thời gian hỗ trợ
+30 phút
+1 giờ
+1 giờ 30 phút
+2 → 6 giờ
+🧑‍💻 Thông tin đăng nhập RDP
+Sau khi workflow chạy xong, log sẽ hiển thị:
 
-# 8. Reload systemd và kích hoạt service
-sudo systemctl daemon-reload
-sudo systemctl enable actions-runner
-sudo systemctl start actions-runner
-
-# 9. Kiểm tra trạng thái và log realtime
-sudo systemctl status actions-runner
-sudo journalctl -u actions-runner -f
-
-# 10. Quản lý service
-sudo systemctl stop actions-runner
-sudo systemctl restart actions-runner
+🌐 IP (Tailscale)
+👤 User:nullaMC
+🔐 Password
+📍 Port: 3389
+🔑 Ví dụ
+IP: 100.xxx.xxx.xxx
+User: nullaMC
+Password: Tùy Theo Bản Random Và Mật Khẩu Cố Định Nha.
+Port: 3389
