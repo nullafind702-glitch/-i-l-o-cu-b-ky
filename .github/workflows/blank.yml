@@ -1,4 +1,4 @@
-name: 🚀 SERVER vanmanhgaming
+name: 🚀 SERVER nullamc
 
 on:
   workflow_dispatch:
@@ -23,10 +23,9 @@ on:
           - '6_Giờ_(360m)'
 
 jobs:
-  Vanmanhgaming-RDP-Setup:
+  nullamc-RDP-Setup:
     runs-on: windows-latest
     steps:
-      # BANNER CHÀO MỪNG
       - name: KHỞI ĐỘNG HỆ THỐNG
         shell: powershell
         run: |
@@ -34,307 +33,71 @@ jobs:
           $OutputEncoding = [System.Text.Encoding]::UTF8
           chcp 65001 > $null
           
-          Write-Host "`n vanmanhgaming RDP SERVER" -ForegroundColor Yellow
-          Write-Host " Powered by vanmanhgaming" -ForegroundColor Green
+          Write-Host "`n nullamc RDP SERVER" -ForegroundColor Yellow
+          Write-Host " Powered by nullamc" -ForegroundColor Green
           Write-Host " Thời gian: ${{ github.event.inputs.duration }}" -ForegroundColor Magenta
 
-      # CẤU HÌNH HỆ THỐNG
       - name: CẤU HÌNH HỆ THỐNG
         shell: powershell
         run: |
           [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0 -Force
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 0 -Force
-          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "SecurityLayer" -Value 0 -Force
-          netsh advfirewall firewall add rule name="RDP-Premium" dir=in action=allow protocol=TCP localport=3389
-          netsh advfirewall firewall add rule name="RDP-Premium-Out" dir=out action=allow protocol=TCP localport=3389
           Set-Service -Name TermService -StartupType Automatic
           Start-Service TermService
           Write-Host " Cấu hình RDP hoàn tất" -ForegroundColor Green
 
-      # TẠO USER PREMIUM - (mật khẩu cố định)
       - name: 👤 TẠO TÀI KHOẢN PREMIUM
         shell: pwsh
         run: |
-          Write-Host ""
-          Write-Host "👤 ĐANG TẠO TÀI KHOẢN vanmanhgaming" -ForegroundColor Yellow
-
-          Write-Host ""
-          Write-Host "🔐 ĐANG ĐẶT MẬT KHẨU" -ForegroundColor Yellow
-
-          # Mật khẩu cố định
-          $matKhau = "@vanmanh2K9"
+          $matKhau = "@nullamc2K9"
           $securePass = ConvertTo-SecureString $matKhau -AsPlainText -Force
 
-          # Xóa user cũ nếu tồn tại
-          try {
-              Remove-LocalUser -Name "vanmanhgaming" -ErrorAction SilentlyContinue
-              Write-Host "│ ✅ Đã xóa user cũ" -ForegroundColor Green
-              Start-Sleep -Seconds 2
-          } catch {
-              Write-Host "│ ℹ️  Không có user cũ để xóa" -ForegroundColor Blue
-          }
+          Remove-LocalUser -Name "nullamc" -ErrorAction SilentlyContinue
 
-          # Tạo user mới với đầy đủ quyền
-          try {
-              New-LocalUser `
-                  -Name "vanmanhgaming" `
-                  -Password $securePass `
-                  -FullName "vanmanhgaming Premium" `
-                  -Description "vanmanhgaming Premium Account" `
-                  -AccountNeverExpires `
-                  -ErrorAction Stop
+          New-LocalUser `
+              -Name "nullamc" `
+              -Password $securePass `
+              -FullName "nullamc Premium" `
+              -AccountNeverExpires
 
-              Write-Host "│ ✅ Đã tạo user mới" -ForegroundColor Green
-              Start-Sleep -Seconds 1
+          Add-LocalGroupMember -Group "Administrators" -Member "nullamc"
+          Add-LocalGroupMember -Group "Remote Desktop Users" -Member "nullamc"
 
-              # Đặt password không bao giờ hết hạn
-              Set-LocalUser -Name "vanmanhgaming" -PasswordNeverExpires $true -ErrorAction SilentlyContinue
+          Enable-LocalUser -Name "nullamc"
 
-              # Thêm vào các nhóm cần thiết
-              Add-LocalGroupMember -Group "Administrators" -Member "vanmanhgaming" -ErrorAction SilentlyContinue
-              Add-LocalGroupMember -Group "Remote Desktop Users" -Member "vanmanhgaming" -ErrorAction SilentlyContinue
-
-              # Kích hoạt user
-              Enable-LocalUser -Name "vanmanhgaming" -ErrorAction SilentlyContinue
-
-              Write-Host "│ ✅ Đã cấp quyền Administrator & RDP" -ForegroundColor Green
-
-          } catch {
-              Write-Host "│ ❌ Lỗi tạo user: $($_.Exception.Message)" -ForegroundColor Red
-              exit 1
-          }
-
-          # Lưu thông tin
-          echo "RDP_USER=vanmanhgaming" >> $env:GITHUB_ENV
+          echo "RDP_USER=nullamc" >> $env:GITHUB_ENV
           echo "RDP_PASS=$matKhau" >> $env:GITHUB_ENV
-          echo "$matKhau" > $env:TEMP\rdp_password.txt
 
-          Write-Host "✅ Tài khoản: vanmanhgaming đã sẵn sàng" -ForegroundColor Green
-
-      # TAILSCALE PREMIUM
-      - name: 🌐 THIẾT LẬP MẠNG PREMIUM
+      - name: 🌐 THIẾT LẬP TAILSCALE
         env:
           TAILSCALE_AUTH_KEY: ${{ secrets.TAILSCALE_AUTH_KEY }}
         run: |
-          Write-Host ""
-          Write-Host "🌐 ĐANG THIẾT LẬP KẾT NỐI MẠNG" -ForegroundColor Yellow
+          $msiPath = "$env:TEMP\tailscale.msi"
+          Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile $msiPath
+          Start-Process msiexec.exe -ArgumentList "/i", "`"$msiPath`"", "/quiet", "/norestart" -Wait
           
-          # Cài đặt Tailscale
-          try {
-              $msiPath = "$env:TEMP\tailscale-premium.msi"
-              Invoke-WebRequest -Uri "https://pkgs.tailscale.com/stable/tailscale-setup-latest-amd64.msi" -OutFile $msiPath
-              Start-Process msiexec.exe -ArgumentList "/i", "`"$msiPath`"", "/quiet", "/norestart" -Wait
-              Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
-              Write-Host "│ ✅ Cài đặt Tailscale thành công" -ForegroundColor Green
-          } catch {
-              Write-Host "│ ❌ Lỗi cài đặt Tailscale" -ForegroundColor Red
-          }
-          
-          # Chờ dịch vụ khởi động
           Start-Sleep -Seconds 10
-          
-          # Kết nối Tailscale
-          try {
-              & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TAILSCALE_AUTH_KEY --hostname=vanmanhgaming-premium-$env:GITHUB_RUN_ID --accept-routes --accept-dns --reset
-              Write-Host "│ ✅ Kết nối Tailscale thành công" -ForegroundColor Green
-          } catch {
-              Write-Host "│ ❌ Lỗi kết nối Tailscale" -ForegroundColor Red
-          }
-          
-          # Lấy IP với retry mechanism
-          Write-Host "🔄 Đang lấy địa chỉ IP..." -NoNewline -ForegroundColor Blue
-          $ip = $null
-          for($i=0; $i -lt 20; $i++) {
-              try {
-                  $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4 2>&1
-                  if ($ip -and $ip -match '^\d+\.\d+\.\d+\.\d+$') {
-                      echo "TAILSCALE_IP=$ip" >> $env:GITHUB_ENV
-                      Write-Host "`r✅ Địa chỉ IP: $ip" -ForegroundColor Green
-                      break
-                  }
-              } catch {
-                  # Bỏ qua lỗi và thử lại
-              }
-              Write-Host "`r🔄 Đang lấy địa chỉ IP... $(@('.', '..', '...')[$i % 3])" -NoNewline -ForegroundColor Blue
-              Start-Sleep -Seconds 3
-          }
-          
-          if (-not $ip -or $ip -notmatch '^\d+\.\d+\.\d+\.\d+$') {
-              Write-Host "`r⚠️  Không thể lấy IP, sử dụng localhost" -ForegroundColor Yellow
-              echo "TAILSCALE_IP=localhost" >> $env:GITHUB_ENV
-          }
 
-      - name: 🌐 KIỂM TRA KẾT NỐI ĐẾN TAILSCALE
-        run: |
-          # Kích hoạt Tailscale bằng Auth Key và đặt tên máy theo ID của GitHub Runner
-          Write-Host "🔧 Đang khởi tạo Tailscale..."
-          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=${{ secrets.TAILSCALE_AUTH_KEY }} --hostname=gh-runner-$env:GITHUB_RUN_ID
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" up --authkey=$env:TAILSCALE_AUTH_KEY --hostname=nullamc-$env:GITHUB_RUN_ID
 
-          # Chờ Tailscale cấp địa chỉ IP
-          Write-Host "⏳ Đang chờ Tailscale cấp IP..."
-          $tsIP = $null
-          $retries = 0
+          $ip = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
+          echo "TAILSCALE_IP=$ip" >> $env:GITHUB_ENV
 
-          while (-not $tsIP -and $retries -lt 10) {
-              $tsIP = & "$env:ProgramFiles\Tailscale\tailscale.exe" ip -4
-              Start-Sleep -Seconds 5
-              $retries++
-          }
-
-          # Nếu không lấy được địa chỉ IP thì báo lỗi và thoát
-          if (-not $tsIP) {
-              Write-Error "❌ Không thể lấy địa chỉ IP từ Tailscale. Dừng tiến trình."
-              exit 1
-          }
-
-          Write-Host "✅ Đã nhận IP Tailscale: $tsIP" -ForegroundColor Green
-
-          # Xuất IP sang biến môi trường để dùng ở bước tiếp theo
-          echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
-
-      # KIỂM TRA KẾT NỐI RDP
-      - name: KIỂM TRA KẾT NỐI RDP
-        shell: pwsh
-        run: |
-          Write-Host " Địa chỉ Tailscale: $env:TAILSCALE_IP"
-          $testResult = Test-NetConnection -ComputerName $env:TAILSCALE_IP -Port 3389 -WarningAction SilentlyContinue
-          if (-not $testResult.TcpTestSucceeded) {
-              Write-Error " Không thể kết nối TCP đến cổng RDP (3389)."
-              exit 1
-          }
-
-     # DỌN DẸP
-      - name: 🧹 DỌN DẸP FILE TẠM
-        if: always()
-        run: |
-          Remove-Item "$env:TEMP\rdp_password.txt" -Force -ErrorAction SilentlyContinue
-          Write-Host "🧹 Đã dọn dẹp file tạm thành công!" -ForegroundColor Green
-
-      # HIỂN THỊ GIAO DIỆN ĐẸP
       - name: 🎉 THÔNG TIN KẾT NỐI
         run: |
-          # Lấy mật khẩu từ biến môi trường (được thiết lập trong bước tạo user)
-          $matKhau = $env:RDP_PASS
-          if (-not $matKhau) {
-              $matKhau = "Không thể đọc mật khẩu"
-          }
-          
-          # Chuyển đổi thời gian từ input sang phút
-          $durationInput = "${{ github.event.inputs.duration }}"
-          switch ($durationInput) {
-              "30_Phút_(30m)"              { $totalMinutes = 30;  $displayTime = "30 phút" }
-              "1_Giờ_(60m)"                { $totalMinutes = 60;  $displayTime = "1 giờ" }
-              "1_Giờ_30_Phút_(90m)"        { $totalMinutes = 90;  $displayTime = "1 giờ 30 phút" }
-              "2_Giờ_(120m)"               { $totalMinutes = 120; $displayTime = "2 giờ" }
-              "2_Giờ_30_Phút_(150m)"       { $totalMinutes = 150; $displayTime = "2 giờ 30 phút" }
-              "3_Giờ_(180m)"               { $totalMinutes = 180; $displayTime = "3 giờ" }
-              "3_Giờ_30_Phút_(210m)"       { $totalMinutes = 210; $displayTime = "3 giờ 30 phút" }
-              "4_Giờ_(240m)"               { $totalMinutes = 240; $displayTime = "4 giờ" }
-              "4_Giờ_30_Phút_(270m)"       { $totalMinutes = 270; $displayTime = "4 giờ 30 phút" }
-              "5_Giờ_(300m)"               { $totalMinutes = 300; $displayTime = "5 giờ" }
-              "5_Giờ_30_Phút_(330m)"       { $totalMinutes = 330; $displayTime = "5 giờ 30 phút" }
-              "6_Giờ_(360m)"               { $totalMinutes = 360; $displayTime = "6 giờ" }
-          }
-          
-          # Tính thời gian chính xác
-          $timeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("SE Asia Standard Time")
-          $thoiGianBatDau = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $timeZone)
-          $thoiGianKetThuc = $thoiGianBatDau.AddMinutes($totalMinutes)
-          
-          Write-Host ""
-          Write-Host "┌───────────────────────────────────────────┐" -ForegroundColor Cyan
-          Write-Host "│              🎉 KẾT NỐI THÀNH CÔNG!              │" -ForegroundColor Cyan
-          Write-Host "├───────────────────────────────────────────┤" -ForegroundColor Cyan
-          Write-Host "│ 🌐  Địa chỉ: $env:TAILSCALE_IP" -ForegroundColor White
-          Write-Host "│ 👤  Tài khoản: vanmanhgaming" -ForegroundColor White
-          Write-Host "│ 🔐  Mật khẩu: $matKhau" -ForegroundColor White
-          Write-Host "│ ⏰  Thời lượng: $displayTime" -ForegroundColor White
-          Write-Host "│ 🕐  Bắt đầu: $($thoiGianBatDau.ToString('HH:mm:ss'))" -ForegroundColor White
-          Write-Host "│ 🕐  Kết thúc: $($thoiGianKetThuc.ToString('HH:mm:ss'))" -ForegroundColor White
-          Write-Host "│ 📍  Port: 3389" -ForegroundColor White
-          Write-Host "├───────────────────────────────────────────┤" -ForegroundColor Cyan
-          Write-Host "│ 💡  Hướng dẫn:                                     │" -ForegroundColor Cyan
-          Write-Host "│   1. Mở Remote Desktop Connection                  │" -ForegroundColor Yellow
-          Write-Host "│   2. Nhập: $env:TAILSCALE_IP                       │" -ForegroundColor Yellow
-          Write-Host "│   3. User: vanmanhgaming | Password: trên          │" -ForegroundColor Yellow
-          Write-Host "│   4. Done VPS Rồi Nha Các Tình Yêu! 🚀             │" -ForegroundColor Yellow
-          Write-Host "└───────────────────────────────────────────┘" -ForegroundColor Cyan
-          
-          # Lưu thời gian vào biến môi trường
-          echo "TOTAL_MINUTES=$totalMinutes" >> $env:GITHUB_ENV
+          Write-Host "🌐 IP: $env:TAILSCALE_IP"
+          Write-Host "👤 User: nullamc"
+          Write-Host "🔐 Pass: $env:RDP_PASS"
+          Write-Host "📍 Port: 3389"
 
-        # DUY TRÌ PHIÊN LÀM VIỆC ỔN ĐỊNH Và 90 ngày / 24/7
-      - name: ⏳ DUY TRÌ PHIÊN LÀM VIỆC
+      - name: ⏳ GIỮ SESSION
         shell: pwsh
         run: |
-            $totalMinutes = [int]$env:TOTAL_MINUTES
-            $timeZone = [System.TimeZoneInfo]::FindSystemTimeZoneById("SE Asia Standard Time")
-            $startTime = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $timeZone)
-            $endTime = $startTime.AddMinutes($totalMinutes)
-            Write-Host ""
-            Write-Host "🔄 BẮT ĐẦU DUY TRÌ PHIÊN LÀM VIỆC..." -ForegroundColor Yellow
-            Write-Host "💎 Phiên: $env:RDP_USER" -ForegroundColor Magenta
-            Write-Host "🔗 Kết nối: $env:TAILSCALE_IP" -ForegroundColor Cyan
-            Write-Host "🕐 Bắt đầu: $($startTime.ToString('dd/MM/yyyy HH:mm:ss'))" -ForegroundColor Green
-            Write-Host "🕐 Kết thúc: $($endTime.ToString('dd/MM/yyyy HH:mm:ss'))" -ForegroundColor Green
-            Write-Host ""
-            # Giám sát TermService
-            $monitorScript = {
-                while ($true) {
-                    $termService = Get-Service -Name TermService -ErrorAction SilentlyContinue
-                    if ($termService.Status -ne 'Running') { Start-Service -Name TermService -ErrorAction SilentlyContinue }
-                    Start-Sleep -Seconds 30
-                }
-            }
-            Start-Job -ScriptBlock $monitorScript -Name "SystemMonitor"
-            # Kiểm tra 24/7 chỉ khi TOTAL_MINUTES >= 43200
-            $infiniteRun = $totalMinutes -ge 43200
-            do {
-                $currentTime = [System.TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $timeZone)
-                $timeLeft = $endTime - $currentTime
-                $days = [math]::Max(0, [math]::Floor($timeLeft.TotalDays))
-                $hours = [math]::Max(0, [math]::Floor($timeLeft.TotalHours % 24))
-                $minutes = [math]::Max(0, [math]::Floor($timeLeft.TotalMinutes % 60))
-                $seconds = [math]::Max(0, [math]::Floor($timeLeft.TotalSeconds % 60))
-                if ($infiniteRun) {
-                    Write-Host ("🟢 Chế độ 24/7 đang chạy... Thời gian còn lại: {0} ngày {1} giờ {2} phút {3} giây" -f $days, $hours, $minutes, $seconds) -ForegroundColor Green
-                } else {
-                    Write-Host ("⏳ Thời gian còn lại: {0} ngày {1} giờ {2} phút {3} giây" -f $days, $hours, $minutes, $seconds) -ForegroundColor Cyan
-                }
-                Start-Sleep -Seconds 5
-            } while ($infiniteRun -or $timeLeft.TotalSeconds -gt 0)
-            Write-Host "🎯 ĐÃ HẾT THỜI GIAN - TỰ ĐỘNG DỪNG!" -ForegroundColor Red
-            # Dọn dẹp Job giám sát
-            Get-Job -Name "SystemMonitor" -ErrorAction SilentlyContinue | Stop-Job -PassThru | Remove-Job -Force
+          Start-Sleep -Seconds 18000
 
-      # DỌN DẸP CUỐI CÙNG
-      - name: DỌN DẸP HỆ THỐNG
+      - name: DỌN DẸP
         if: always()
-        shell: powershell
         run: |
-          Write-Host ""
-          Write-Host " ĐANG DỌN DẸP HỆ THỐNG..." -ForegroundColor Yellow
-
-          try { Disable-LocalUser -Name "vanmanhgaming" -ErrorAction SilentlyContinue } catch {}
-
-          try {
-              & "$env:ProgramFiles\Tailscale\tailscale.exe" down --accept-risk=all
-              Start-Sleep -Seconds 5
-          } catch {}
-
-          try {
-              netsh advfirewall firewall delete rule name="RDP-Premium" 2>$null
-              netsh advfirewall firewall delete rule name="RDP-Premium-Out" 2>$null
-              Remove-NetFirewallRule -DisplayName "RDP-Premium" -ErrorAction SilentlyContinue
-              Remove-NetFirewallRule -DisplayName "RDP-Premium-Out" -ErrorAction SilentlyContinue
-          } catch {}
-
-          try {
-              Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 1 -Force
-              Stop-Service -Name TermService -Force -ErrorAction SilentlyContinue
-          } catch {}
-
-          Get-Job | Stop-Job -PassThru | Remove-Job -Force -ErrorAction SilentlyContinue
-
-          Write-Host " Dọn dẹp hoàn tất! Hẹn gặp lại! " -ForegroundColor Green
+          Disable-LocalUser -Name "nullamc" -ErrorAction SilentlyContinue
+          & "$env:ProgramFiles\Tailscale\tailscale.exe" down --accept-risk=all
+          Stop-Service TermService -Force -ErrorAction SilentlyContinue
